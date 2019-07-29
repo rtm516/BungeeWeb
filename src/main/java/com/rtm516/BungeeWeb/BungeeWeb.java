@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 
+import org.bstats.bungeecord.Metrics;
+
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
@@ -17,6 +19,9 @@ public class BungeeWeb extends Plugin {
     @Override
     public void onEnable() {
     	instance = this;
+    	
+    	@SuppressWarnings("unused")
+		Metrics metrics = new Metrics(this);
     	
         setupConfig();
         
