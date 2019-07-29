@@ -72,4 +72,5 @@ local.properties
 
 # End of https://www.gitignore.io/api/eclipse
 
-dev_server/
+dev_server/*
+!dev_server/start.bat
