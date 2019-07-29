@@ -4,13 +4,19 @@ import com.sun.net.httpserver.HttpServer;
 
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.config.Configuration;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class HTTPServer {
 	static HttpServer server;
@@ -117,11 +123,30 @@ public class HTTPServer {
 				"	<meta name='viewport' content='width=device-width, initial-scale=1'>\n" + 
 				"	<link rel='stylesheet' type='text/css' media='screen' href='main.css'>\n" + 
 				"</head>\n" + 
-				"<body>\n";
+				"<body>\n" +
+				"<div id='buttons'>\n";
 		
-		content += "Test\n";
+		//List<String> links = BungeeWeb.instance.getConfig().getStringList("links");
 		
-		content += "</body>\n" + 
+        //for(String entry : links){
+        //	BungeeWeb.instance.getLogger().info(entry);
+        //	for(Field field: entry.getClass().getDeclaredFields()){
+        //    	BungeeWeb.instance.getLogger().info(field.toString());
+        //    }
+        //}
+        
+        Configuration links = (Configuration) BungeeWeb.instance.getConfig().get("links");
+        for(String id : links.getKeys()){
+        	Configuration linkInfo = (Configuration) links.get(id);
+
+        	BungeeWeb.instance.getLogger().info(id + ":");
+        	BungeeWeb.instance.getLogger().info("	name: " + linkInfo.getString("name"));
+        	BungeeWeb.instance.getLogger().info("	server: " + linkInfo.getString("server"));
+        	BungeeWeb.instance.getLogger().info("	port: " + linkInfo.getInt("port"));
+        }
+		
+		content += "</div>\n" +
+				"</body>\n" + 
 				"</html>";
 		
 		return content;

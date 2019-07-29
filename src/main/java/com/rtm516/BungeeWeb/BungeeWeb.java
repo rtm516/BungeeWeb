@@ -13,7 +13,7 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 
 public class BungeeWeb extends Plugin {
-	public static Plugin instance;
+	public static BungeeWeb instance;
 	private Configuration configuration;
 	
     @Override
@@ -61,5 +61,9 @@ public class BungeeWeb extends Plugin {
 	        getProxy().getPluginManager().unregisterCommands(this);
 			this.onDisable();
 		}
+    }
+    
+    public Configuration getConfig() {
+    	return configuration;
     }
 }
