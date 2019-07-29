@@ -2,8 +2,15 @@ package com.rtm516.BungeeWeb;
 
 import com.sun.net.httpserver.HttpServer;
 
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.plugin.Plugin;
+
+import java.io.File;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HTTPServer {
 	static HttpServer server;
@@ -28,9 +35,42 @@ public class HTTPServer {
 			});
 			
 			server.createContext("/content/", httpExchange -> {
-				byte response[] = "test".getBytes("UTF-8");
+				String reqFile = httpExchange.getRequestURI().getPath().substring("/content/".length());
+				File file = new File(BungeeWeb.instance.getDataFolder() + "/content/", reqFile);
+				
+				byte response[];
+				
+				// Make sure there is no DIR traversal and there still in /content/
+				if (new File(file.getCanonicalPath()).getParentFile().getCanonicalPath() != new File(BungeeWeb.instance.getDataFolder() + "/content/").getCanonicalPath()) {
+					response = "Invalid path".getBytes("utf-8");
+				} else {
+					response = Files.readAllBytes(file.toPath());
+				}
+				
+				String contentType;
+				switch (getFileExtension(file)) {
+					case ".css":
+						contentType = "text/css";
+						break;
 
-				httpExchange.getResponseHeaders().add("Content-Type", "text/plain; charset=UTF-8");
+					case ".png":
+						contentType = "image/png";
+						break;
+
+					case ".jpeg":
+						contentType = "image/jpeg";
+						break;
+
+					case ".jpg":
+						contentType = "image/jpeg";
+						break;
+	
+					default:
+						contentType = "text/plain";
+						break;
+				}
+
+				httpExchange.getResponseHeaders().add("Content-Type", contentType + "; charset=UTF-8");
 				httpExchange.sendResponseHeaders(200, response.length);
 
 				OutputStream out = httpExchange.getResponseBody();
@@ -49,6 +89,21 @@ public class HTTPServer {
 			server.stop(0);
 		}
 	}
+	
+	private static String getFileExtension(File file) {
+        String extension = "";
+ 
+        try {
+            if (file != null && file.exists()) {
+                String name = file.getName();
+                extension = name.substring(name.lastIndexOf("."));
+            }
+        } catch (Exception e) {
+            extension = "";
+        }
+ 
+        return extension; 
+    }
 	
 	private static String renderHome() {
 		String content = "";

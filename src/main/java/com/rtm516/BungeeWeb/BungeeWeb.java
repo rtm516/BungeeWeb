@@ -11,10 +11,13 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 
 public class BungeeWeb extends Plugin {
+	public static Plugin instance;
 	private Configuration configuration;
 	
     @Override
-    public void onEnable() {        
+    public void onEnable() {
+    	instance = this;
+    	
         setupConfig();
         
         HTTPServer.start(configuration.getInt("port"));
@@ -28,6 +31,10 @@ public class BungeeWeb extends Plugin {
     private void setupConfig() {
     	if (!getDataFolder().exists())
             getDataFolder().mkdir();
+    	
+    	File contentDir = new File(getDataFolder() + "/content/");
+    	if (!contentDir.exists())
+    		contentDir.mkdir();
 
         File file = new File(getDataFolder(), "config.yml");
 
