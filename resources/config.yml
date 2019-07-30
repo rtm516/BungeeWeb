@@ -4,4 +4,8 @@ links:
       name: Survival Dynmap
       server: survival
       port: 8123
+   sg-stats:
+      name: Survival Games Stats
+      server: survivalgames
+      port: 880
       

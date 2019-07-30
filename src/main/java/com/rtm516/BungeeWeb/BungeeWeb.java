@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.bstats.bungeecord.Metrics;
 
@@ -15,6 +17,7 @@ import net.md_5.bungee.config.YamlConfiguration;
 public class BungeeWeb extends Plugin {
 	public static BungeeWeb instance;
 	private Configuration configuration;
+	private List<WebLink> webLinks = new ArrayList<>();
 	
     @Override
     public void onEnable() {
@@ -61,9 +64,26 @@ public class BungeeWeb extends Plugin {
 	        getProxy().getPluginManager().unregisterCommands(this);
 			this.onDisable();
 		}
+        
+        Configuration links = (Configuration) BungeeWeb.instance.getConfig().get("links");
+        for(String id : links.getKeys()){
+        	Configuration linkInfo = (Configuration) links.get(id);
+        	WebLink tmpLink = new WebLink();
+        	
+        	tmpLink.id = id;
+        	tmpLink.name = linkInfo.getString("name");
+        	tmpLink.server = linkInfo.getString("server");
+        	tmpLink.port = linkInfo.getInt("port");
+        	
+        	webLinks.add(tmpLink);
+        }
     }
     
     public Configuration getConfig() {
     	return configuration;
+    }
+    
+    public List<WebLink> getLinks() {
+    	return webLinks;
     }
 }

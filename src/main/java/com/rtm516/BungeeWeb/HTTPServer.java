@@ -135,14 +135,8 @@ public class HTTPServer {
         //    }
         //}
         
-        Configuration links = (Configuration) BungeeWeb.instance.getConfig().get("links");
-        for(String id : links.getKeys()){
-        	Configuration linkInfo = (Configuration) links.get(id);
-
-        	BungeeWeb.instance.getLogger().info(id + ":");
-        	BungeeWeb.instance.getLogger().info("	name: " + linkInfo.getString("name"));
-        	BungeeWeb.instance.getLogger().info("	server: " + linkInfo.getString("server"));
-        	BungeeWeb.instance.getLogger().info("	port: " + linkInfo.getInt("port"));
+        for (WebLink link : BungeeWeb.instance.getLinks()) {
+        	content += "<a href='/" + link.id + "/'>" + link.name + "</a>\n";
         }
 		
 		content += "</div>\n" +
