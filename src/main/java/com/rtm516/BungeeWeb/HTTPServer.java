@@ -6,17 +6,25 @@ import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.HttpsURLConnection;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Scanner;
 
 public class HTTPServer {
 	static HttpServer server;
@@ -30,7 +38,9 @@ public class HTTPServer {
 			server = HttpServer.create(new InetSocketAddress(port), 0);
 			
 			server.createContext("/", httpExchange -> {
-				byte response[] = renderHome().getBytes("UTF-8");
+				String extra = "";
+				
+				byte response[] = (renderHome() + extra).getBytes("UTF-8");
 
 				httpExchange.getResponseHeaders().add("Content-Type", "text/html; charset=UTF-8");
 				httpExchange.sendResponseHeaders(200, response.length);
@@ -48,7 +58,7 @@ public class HTTPServer {
 				
 				// Make sure there is no DIR traversal and there still in /content/
 				if (new File(file.getCanonicalPath()).getParentFile().getCanonicalPath() != new File(BungeeWeb.instance.getDataFolder() + "/content/").getCanonicalPath()) {
-					response = "Invalid path".getBytes("utf-8");
+					response = "Invalid path".getBytes("UTF-8");
 				} else {
 					response = Files.readAllBytes(file.toPath());
 				}
@@ -83,6 +93,71 @@ public class HTTPServer {
 				out.write(response);
 				out.close();
 			});
+			
+			server.createContext("/test/", httpExchange -> {
+				String reqFile = httpExchange.getRequestURI().getPath().substring("/test/".length());
+				BungeeWeb.instance.getLogger().info("Start");				
+				
+				URL obj = new URL("http://192.168.1.2/");
+				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+				
+				con.setRequestMethod(httpExchange.getRequestMethod());
+				for (Entry<String, List<String>> header : httpExchange.getRequestHeaders().entrySet()) {
+					for (String value : header.getValue()) {
+						con.setRequestProperty(header.getKey(), value);
+					}
+				}
+				BungeeWeb.instance.getLogger().info("Setup headers");
+				
+				Scanner s = new Scanner(httpExchange.getRequestBody());
+				s.useDelimiter("\\A");
+				String result = s.hasNext() ? s.next() : "";
+				s.close();
+				
+				if (result.length() > 0) {
+					con.setDoOutput(true);
+					DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+					wr.writeBytes(result);
+					wr.flush();
+					wr.close();
+				}
+				
+				BungeeWeb.instance.getLogger().info("Setup body");
+				
+				int responseCode = con.getResponseCode();
+				
+				Scanner responseScanner = new Scanner(con.getInputStream());
+				responseScanner.useDelimiter("\\A");
+				String responseMessage = responseScanner.hasNext() ? responseScanner.next() : "";
+				responseScanner.close();
+				
+				byte[] response = responseMessage.getBytes("UTF-8");
+				
+				BungeeWeb.instance.getLogger().info("Done request");
+				BungeeWeb.instance.getLogger().info(Integer.toString(responseCode));
+				//BungeeWeb.instance.getLogger().info(responseMessage);
+				
+				try {
+					for (Entry<String, List<String>> header : con.getHeaderFields().entrySet()) {
+						if (header.getKey() == null) { continue; }
+						for (String value : header.getValue()) {
+							BungeeWeb.instance.getLogger().info(header.getKey() + ": " + value);
+							httpExchange.getResponseHeaders().add(header.getKey(), value);
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				httpExchange.sendResponseHeaders(responseCode, response.length);
+				
+				BungeeWeb.instance.getLogger().info("Done request2");
+
+				OutputStream out = httpExchange.getResponseBody();
+				out.write(response);
+				out.close();
+				
+				BungeeWeb.instance.getLogger().info("Done");
+			});
 
 			server.start();
 		} catch (Throwable tr) {
@@ -109,7 +184,7 @@ public class HTTPServer {
         }
  
         return extension; 
-    }
+	}
 	
 	private static String renderHome() {
 		String content = "";

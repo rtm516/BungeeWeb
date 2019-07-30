@@ -7,5 +7,4 @@ links:
    sg-stats:
       name: Survival Games Stats
       server: survivalgames
-      port: 880
-      
+      port: 8080
