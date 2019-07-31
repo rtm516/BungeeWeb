@@ -9,10 +9,13 @@ import net.md_5.bungee.config.Configuration;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,7 +67,7 @@ public class HTTPServer {
 				}
 				
 				String contentType;
-				switch (getFileExtension(file)) {
+				switch (Utils.getFileExtension(file)) {
 					case ".css":
 						contentType = "text/css";
 						break;
@@ -94,70 +97,84 @@ public class HTTPServer {
 				out.close();
 			});
 			
-			server.createContext("/test/", httpExchange -> {
-				String reqFile = httpExchange.getRequestURI().getPath().substring("/test/".length());
-				BungeeWeb.instance.getLogger().info("Start");				
-				
-				URL obj = new URL("http://192.168.1.2/");
-				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-				
-				con.setRequestMethod(httpExchange.getRequestMethod());
-				for (Entry<String, List<String>> header : httpExchange.getRequestHeaders().entrySet()) {
-					for (String value : header.getValue()) {
-						con.setRequestProperty(header.getKey(), value);
+			for (WebLink link : BungeeWeb.instance.getLinks()) {
+				server.createContext("/" + link.id + "/", httpExchange -> {
+					String reqFile = httpExchange.getRequestURI().getPath().substring(("/" + link.id + "/").length());
+					reqFile = Utils.encodePath(reqFile);
+					
+					BungeeWeb.instance.getLogger().info(reqFile);					
+					
+					//URL obj = new URL("http://" + ProxyServer.getInstance().getServerInfo(link.server).getAddress().getHostString() + ":" + Integer.toString(link.port) + "/" + reqFile);
+					URL obj = new URL("http://192.168.1.2/" + reqFile);
+					HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+					
+					BungeeWeb.instance.getLogger().info("Request");
+					con.setRequestMethod(httpExchange.getRequestMethod());
+					for (Entry<String, List<String>> header : httpExchange.getRequestHeaders().entrySet()) {
+						if (header.getKey() == null) { continue; }
+						for (String value : header.getValue()) {
+							if (header.getKey().toLowerCase().equals("cache-control")) { continue; }
+							BungeeWeb.instance.getLogger().info(header.getKey() + ": " + value);
+							con.setRequestProperty(header.getKey(), value);
+						}
 					}
-				}
-				BungeeWeb.instance.getLogger().info("Setup headers");
-				
-				Scanner s = new Scanner(httpExchange.getRequestBody());
-				s.useDelimiter("\\A");
-				String result = s.hasNext() ? s.next() : "";
-				s.close();
-				
-				if (result.length() > 0) {
-					con.setDoOutput(true);
-					DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-					wr.writeBytes(result);
-					wr.flush();
-					wr.close();
-				}
-				
-				BungeeWeb.instance.getLogger().info("Setup body");
-				
-				int responseCode = con.getResponseCode();
-				
-				Scanner responseScanner = new Scanner(con.getInputStream());
-				responseScanner.useDelimiter("\\A");
-				String responseMessage = responseScanner.hasNext() ? responseScanner.next() : "";
-				responseScanner.close();
-				
-				byte[] response = responseMessage.getBytes("UTF-8");
-				
-				BungeeWeb.instance.getLogger().info("Done request");
-				BungeeWeb.instance.getLogger().info(Integer.toString(responseCode));
-				//BungeeWeb.instance.getLogger().info(responseMessage);
-				
-				try {
+					
+					con.setRequestProperty("Cache-Control", "no-cache");
+					
+					Scanner s = new Scanner(httpExchange.getRequestBody());
+					s.useDelimiter("\\A");
+					String result = s.hasNext() ? s.next() : "";
+					s.close();
+					
+					if (result.length() > 0) {
+						con.setDoOutput(true);
+						DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+						wr.writeBytes(result);
+						wr.flush();
+						wr.close();
+					}
+					
+					int responseCode = con.getResponseCode();
+					
+					Scanner responseScanner = new Scanner(con.getInputStream());
+					responseScanner.useDelimiter("\\A");
+					String responseMessage = responseScanner.hasNext() ? responseScanner.next() : "";
+					responseScanner.close();
+					
+					byte[] response = responseMessage.getBytes("UTF-8");
+					
+					BungeeWeb.instance.getLogger().info("Response");
 					for (Entry<String, List<String>> header : con.getHeaderFields().entrySet()) {
 						if (header.getKey() == null) { continue; }
 						for (String value : header.getValue()) {
 							BungeeWeb.instance.getLogger().info(header.getKey() + ": " + value);
-							httpExchange.getResponseHeaders().add(header.getKey(), value);
+							httpExchange.getResponseHeaders().set(header.getKey(), value);
 						}
 					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				httpExchange.sendResponseHeaders(responseCode, response.length);
-				
-				BungeeWeb.instance.getLogger().info("Done request2");
-
-				OutputStream out = httpExchange.getResponseBody();
-				out.write(response);
-				out.close();
-				
-				BungeeWeb.instance.getLogger().info("Done");
-			});
+					BungeeWeb.instance.getLogger().info("1");
+					
+					if (con.getContentType() != null) {
+						//httpExchange.getResponseHeaders().set("Content-Type", con.getContentType());
+					}
+					
+					// Force transfer encoding to prevent the page from not loading
+					httpExchange.getResponseHeaders().set("Transfer-Encoding", "identity");
+					
+					BungeeWeb.instance.getLogger().info("2");
+					
+					BungeeWeb.instance.getLogger().info(Integer.toString(responseCode));
+					
+					httpExchange.sendResponseHeaders(responseCode, response.length);
+					
+					BungeeWeb.instance.getLogger().info("3");
+	
+					OutputStream out = httpExchange.getResponseBody();
+					out.write(response);
+					out.close();
+					
+					BungeeWeb.instance.getLogger().info("4");
+				});
+			}
 
 			server.start();
 		} catch (Throwable tr) {
@@ -169,21 +186,6 @@ public class HTTPServer {
 		if (server != null) {
 			server.stop(0);
 		}
-	}
-	
-	private static String getFileExtension(File file) {
-        String extension = "";
- 
-        try {
-            if (file != null && file.exists()) {
-                String name = file.getName();
-                extension = name.substring(name.lastIndexOf("."));
-            }
-        } catch (Exception e) {
-            extension = "";
-        }
- 
-        return extension; 
 	}
 	
 	private static String renderHome() {
