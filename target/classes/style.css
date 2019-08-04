@@ -1,0 +1,23 @@
+body {
+	background-image: url(https://www.minecraft.net/content/dam/archive/og-image/index-hero-og.jpg);
+	background-repeat: no-repeat;
+    background-size: 100% auto;
+}
+
+#buttons {
+	text-align: center;
+    margin-top: 10%;
+}
+
+#buttons a {
+	background-color: rgba(0, 0, 0, .5);
+    display: inline-block;
+    height: 200px;
+    width: 200px;
+    border-radius: 5px;
+    margin: 5px;
+    text-align: center;
+	text-decoration: none;
+	color: #FFF;
+	line-height: 200px;
+}

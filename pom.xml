@@ -5,7 +5,7 @@
 
 	<groupId>com.rtm516</groupId>
 	<artifactId>BungeeWeb</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-Beta</version>
 	<packaging>jar</packaging>
 
 	<name>BungeeWeb</name>

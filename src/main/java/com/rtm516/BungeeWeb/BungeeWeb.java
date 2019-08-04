@@ -86,4 +86,10 @@ public class BungeeWeb extends Plugin {
     public List<WebLink> getLinks() {
     	return webLinks;
     }
+    
+    public void debugPrint(String msg) {
+    	if (BungeeWeb.instance.getConfig().getBoolean("debug")) {
+    		BungeeWeb.instance.getLogger().info(msg);
+    	}
+    }
 }
