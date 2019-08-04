@@ -15,6 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.logging.Level;
@@ -22,6 +23,7 @@ import java.util.logging.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -112,14 +114,24 @@ public class HTTPServer {
 					con.setRequestMethod(httpExchange.getRequestMethod());
 					for (Entry<String, List<String>> header : httpExchange.getRequestHeaders().entrySet()) {
 						if (header.getKey() == null) { continue; }
+						//if (header.getKey().toLowerCase().equals("content-type")) { continue; }
 						for (String value : header.getValue()) {
-							if (header.getKey().toLowerCase().equals("cache-control")) { continue; }
-							BungeeWeb.instance.getLogger().info(header.getKey() + ": " + value);
 							con.setRequestProperty(header.getKey(), value);
 						}
 					}
 					
-					con.setRequestProperty("Cache-Control", "no-cache");
+					
+					/*String contentStr = con.getContentType();
+					if (con.getContentEncoding() != null) {
+						contentStr += "; charset=" + con.getContentEncoding();
+					} else {
+						contentStr += "; charset=UTF-8";
+					}*/
+					
+					//con.setRequestProperty("Content-Type", contentStr);
+					
+					//BungeeWeb.instance.getLogger().info(con.getContentType());
+					//BungeeWeb.instance.getLogger().info(con.getContentEncoding());
 					
 					Scanner s = new Scanner(httpExchange.getRequestBody());
 					s.useDelimiter("\\A");
@@ -141,7 +153,7 @@ public class HTTPServer {
 					String responseMessage = responseScanner.hasNext() ? responseScanner.next() : "";
 					responseScanner.close();
 					
-					byte[] response = responseMessage.getBytes("UTF-8");
+					byte[] response = responseMessage.getBytes();
 					
 					BungeeWeb.instance.getLogger().info("Response");
 					for (Entry<String, List<String>> header : con.getHeaderFields().entrySet()) {
@@ -157,8 +169,16 @@ public class HTTPServer {
 						//httpExchange.getResponseHeaders().set("Content-Type", con.getContentType());
 					}
 					
+					/*for (Entry<String, Charset> ch : java.nio.charset.Charset.availableCharsets().entrySet()) {
+						BungeeWeb.instance.getLogger().info(ch.getKey());
+					}*/
+					
+					//BungeeWeb.instance.getLogger().info(java.nio.charset.Charset.defaultCharset().displayName());
+					
 					// Force transfer encoding to prevent the page from not loading
 					httpExchange.getResponseHeaders().set("Transfer-Encoding", "identity");
+					
+					//BungeeWeb.instance.getLogger().info(responseMessage);
 					
 					BungeeWeb.instance.getLogger().info("2");
 					
