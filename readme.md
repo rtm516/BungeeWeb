@@ -26,3 +26,5 @@ links:
       server: survivalgames
       port: 8080
 ```
+
+![The web interface](https://i.imgur.com/1O9KKTb.jpg "The web interface")
